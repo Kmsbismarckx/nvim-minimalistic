@@ -111,6 +111,7 @@ vim.pack.add({
 	{ src = gh("stevearc/conform.nvim") },
 	{ src = gh("nvim-tree/nvim-web-devicons") },
 	{ src = gh("stevearc/oil.nvim") },
+	{ src = gh("folke/which-key.nvim") },
 })
 
 -- Colorscheme
@@ -131,6 +132,9 @@ ts.install({
 	"markdown",
 	"markdown_inline",
 	"bash",
+	"javascript", -- covers .jsx too
+	"typescript",
+	"tsx",
 })
 
 vim.treesitter.language.register("bash", "zsh")
@@ -205,7 +209,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		local client = lsp.get_client_by_id(event.data.client_id)
 
-		-- native completion (Neovim 0.11+): no blink.cmp, but kind icons via `convert`
 		if client and client:supports_method(lsp.protocol.Methods.textDocument_completion) then
 			lsp.completion.enable(true, client.id, event.buf, {
 				autotrigger = true,
@@ -245,6 +248,27 @@ vim.lsp.config("rust_analyzer", {
 	},
 })
 
+vim.lsp.config("vtsls", {
+	settings = {
+		typescript = {
+			inlayHints = {
+				parameterNames = { enabled = "all" },
+				variableTypes = { enabled = true },
+				propertyDeclarationTypes = { enabled = true },
+				functionLikeReturnTypes = { enabled = true },
+			},
+		},
+		javascript = {
+			inlayHints = {
+				parameterNames = { enabled = "all" },
+				variableTypes = { enabled = true },
+				propertyDeclarationTypes = { enabled = true },
+				functionLikeReturnTypes = { enabled = true },
+			},
+		},
+	},
+})
+
 vim.lsp.config("lua_ls", {
 	settings = {
 		Lua = {
@@ -272,6 +296,7 @@ vim.lsp.enable({
 	"cssls",
 	"jsonls",
 	"yamlls",
+	"eslint", -- separate from vtsls: type errors vs lint rules, needs an eslint config file in the project
 })
 
 -- mini.pick (fuzzy finder)
@@ -294,6 +319,13 @@ end, { desc = "Resume Last Picker" })
 -- mini.pairs (autoclose brackets)
 
 require("mini.pairs").setup()
+
+-- which-key (shows available keymaps, reads the `desc` already set on each `map()`)
+
+vim.o.timeout = true
+vim.o.timeoutlen = 500
+
+require("which-key").setup({})
 
 -- diffview (git — the only git plugin in this config)
 
@@ -352,7 +384,7 @@ require("oil").setup({
 	skip_confirm_for_simple_edits = true,
 	view_options = {
 		show_hidden = true,
-		is_hidden_file = function(name, bufnr)
+		is_hidden_file = function(name, _)
 			return vim.startswith(name, "..")
 		end,
 	},
