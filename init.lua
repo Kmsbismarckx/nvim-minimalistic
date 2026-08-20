@@ -30,9 +30,7 @@ o.backspace = "indent,eol,start"
 vim.opt.clipboard:append("unnamedplus")
 o.splitright = true
 o.splitbelow = true
-o.completeopt = "menuone,noselect,popup,fuzzy"
-o.pumheight = 10
-o.pumborder = "rounded"
+o.completeopt = "menuone,noselect"
 o.laststatus = 2
 
 function _G.MinimalGitBranch()
@@ -121,6 +119,8 @@ vim.pack.add({
 	{ src = gh("neovim/nvim-lspconfig") },
 	{ src = gh("echasnovski/mini.pick") },
 	{ src = gh("echasnovski/mini.pairs") },
+	{ src = gh("saghen/blink.cmp"), version = vim.version.range("1") },
+	{ src = gh("rafamadriz/friendly-snippets") },
 	{ src = gh("sindrets/diffview.nvim") },
 	{ src = gh("stevearc/conform.nvim") },
 	{ src = gh("nvim-tree/nvim-web-devicons") },
@@ -131,6 +131,45 @@ require("tokyonight").setup({
 	style = "night",
 })
 vim.cmd.colorscheme("tokyonight")
+
+require("blink.cmp").setup({
+	keymap = {
+		preset = "none",
+
+		["<Up>"] = { "select_prev", "fallback" },
+		["<Down>"] = { "select_next", "fallback" },
+		["<C-x><C-o>"] = { "show", "show_documentation", "hide_documentation" },
+		["<CR>"] = { "accept", "fallback" },
+		["<Tab>"] = { "select_next", "fallback" },
+		["<S-Tab>"] = { "select_prev", "fallback" },
+		["<C-b>"] = { "scroll_documentation_up", "fallback" },
+		["<C-f>"] = { "scroll_documentation_down", "fallback" },
+		["<C-e>"] = { "hide", "fallback" },
+	},
+	appearance = {
+		nerd_font_variant = "mono",
+	},
+	completion = {
+		menu = {
+			border = "rounded",
+			draw = {
+				columns = {
+					{ "label", "label_description", gap = 1 },
+					{ "kind_icon", "kind", gap = 1 },
+					{ "source_name" },
+				},
+			},
+		},
+		documentation = {
+			auto_show = true,
+			window = { border = "rounded" },
+		},
+	},
+	sources = {
+		default = { "lsp", "path", "snippets", "buffer" },
+	},
+	fuzzy = { implementation = "prefer_rust_with_warning" },
+})
 
 local ts = require("nvim-treesitter")
 
@@ -159,38 +198,6 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
-local lsp_kind_icons = {
-	"  Text",
-	"  Method",
-	"  Function",
-	"  Constructor",
-	"  Field",
-	"  Variable",
-	"  Class",
-	"  Interface",
-	"  Module",
-	"  Property",
-	"  Unit",
-	"  Value",
-	"  Enum",
-	"  Keyword",
-	"  Snippet",
-	"  Color",
-	"  File",
-	"  Reference",
-	"  Folder",
-	"  EnumMember",
-	"  Constant",
-	"  Struct",
-	"  Event",
-	"  Operator",
-	"  TypeParameter",
-}
-
-local function lsp_completion_convert(item)
-	return { kind = lsp_kind_icons[item.kind] or item.kind }
-end
-
 vim.api.nvim_create_autocmd("LspAttach", {
 	group = vim.api.nvim_create_augroup("minimal-lsp-attach", { clear = true }),
 	callback = function(event)
@@ -217,14 +224,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
 		local client = lsp.get_client_by_id(event.data.client_id)
 
-		if client and client:supports_method(lsp.protocol.Methods.textDocument_completion) then
-			lsp.completion.enable(true, client.id, event.buf, {
-				autotrigger = true,
-				convert = lsp_completion_convert,
-			})
-			lmap("<C-x><C-o>", lsp.completion.get, "Trigger Completion", "i")
-		end
-
 		if client and client:supports_method(lsp.protocol.Methods.textDocument_documentHighlight) then
 			local group = vim.api.nvim_create_augroup("lsp-highlight", { clear = false })
 			vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
@@ -245,6 +244,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			end, "[T]oggle Inlay [H]ints")
 		end
 	end,
+})
+
+vim.lsp.config("*", {
+	capabilities = require("blink.cmp").get_lsp_capabilities(),
 })
 
 vim.lsp.config("rust_analyzer", {
