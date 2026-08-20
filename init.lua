@@ -1,5 +1,3 @@
--- Options
-
 if vim.fn.has("persistent_undo") == 1 then
 	local target_path = vim.fn.expand("~/.filter_nvim_minimal/undo")
 
@@ -37,7 +35,6 @@ o.pumheight = 10
 o.pumborder = "rounded"
 o.laststatus = 2
 
--- reads .git/HEAD directly (no gitsigns dependency, no shelling out to git)
 function _G.MinimalGitBranch()
 	local git_dir = vim.fs.find(".git", { path = vim.fn.expand("%:p:h"), upward = true, limit = 1 })[1]
 	if not git_dir then
@@ -86,8 +83,6 @@ vim.diagnostic.config({
 	},
 })
 
--- Keymaps
-
 local map = vim.keymap.set
 
 vim.g.mapleader = " "
@@ -116,8 +111,6 @@ end
 map("n", "]d", diag_jump_and_open_float(1), { desc = "Next Diagnostic" })
 map("n", "[d", diag_jump_and_open_float(-1), { desc = "Prev Diagnostic" })
 
--- Plugins (vim.pack, Neovim 0.12+)
-
 local function gh(user_repo)
 	return "https://github.com/" .. user_repo
 end
@@ -134,14 +127,10 @@ vim.pack.add({
 	{ src = gh("stevearc/oil.nvim") },
 })
 
--- Colorscheme
-
 require("tokyonight").setup({
 	style = "night",
 })
 vim.cmd.colorscheme("tokyonight")
-
--- Treesitter
 
 local ts = require("nvim-treesitter")
 
@@ -152,7 +141,7 @@ ts.install({
 	"markdown",
 	"markdown_inline",
 	"bash",
-	"javascript", -- covers .jsx too
+	"javascript",
 	"typescript",
 	"tsx",
 	"kotlin",
@@ -169,8 +158,6 @@ vim.api.nvim_create_autocmd("FileType", {
 		end
 	end,
 })
-
--- LSP
 
 local lsp_kind_icons = {
 	"  Text",
@@ -213,12 +200,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end
 		local lsp = vim.lsp
 
-		lmap("gd", lsp.buf.definition, "[G]oto [D]definition")
+		lmap("gd", lsp.buf.definition, "[G]oto [D]efinition")
 		lmap("gr", lsp.buf.references, "[G]oto [R]eferences")
 		lmap("gI", lsp.buf.implementation, "[G]oto [I]mplementation")
-		lmap("<leader>D", lsp.buf.type_definition, "Type [D]definition")
-		lmap("<leader>ds", lsp.buf.document_symbol, "[D]ocument [S]symbols")
-		lmap("<leader>ws", lsp.buf.workspace_symbol, "[W]orkspace [S]symbols")
+		lmap("<leader>D", lsp.buf.type_definition, "Type [D]efinition")
+		lmap("<leader>ds", lsp.buf.document_symbol, "[D]ocument [S]ymbols")
+		lmap("<leader>ws", lsp.buf.workspace_symbol, "[W]orkspace [S]ymbols")
 
 		lmap("K", lsp.buf.hover, "Hover Documentation")
 		lmap("<leader>rn", lsp.buf.rename, "[R]e[n]ame")
@@ -321,8 +308,6 @@ vim.lsp.enable({
 	"kotlin_language_server",
 })
 
--- mini.pick (fuzzy finder)
-
 require("mini.pick").setup({
 	options = {
 		content_from_bottom = true, -- list grows bottom-up, like fzf/telescope
@@ -356,11 +341,7 @@ map("n", "<leader><space>", function()
 	MiniPick.builtin.resume()
 end, { desc = "Resume Last Picker" })
 
--- mini.pairs (autoclose brackets)
-
 require("mini.pairs").setup()
-
--- diffview (git — the only git plugin in this config)
 
 require("diffview").setup({
 	enhanced_diff_hl = true,
@@ -382,10 +363,8 @@ require("diffview").setup({
 	},
 })
 
-map("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Открыть Git Diff / Конфликты" })
-map("n", "<leader>gc", "<cmd>DiffviewClose<cr>", { desc = "Закрыть Git Diff" })
-
--- conform (formatting)
+map("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Open Git Diff / Conflicts" })
+map("n", "<leader>gc", "<cmd>DiffviewClose<cr>", { desc = "Close Git Diff" })
 
 require("conform").setup({
 	formatters_by_ft = {
@@ -407,8 +386,6 @@ require("conform").setup({
 	},
 	notify_on_error = true,
 })
-
--- oil (file explorer)
 
 require("oil").setup({
 	default_file_explorer = true,
