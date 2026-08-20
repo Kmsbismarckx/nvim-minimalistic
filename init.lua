@@ -13,6 +13,7 @@ end
 
 local o = vim.o
 
+o.swapfile = false
 o.relativenumber = true
 o.number = true
 o.tabstop = 2
@@ -35,25 +36,45 @@ o.completeopt = "menuone,noselect,popup,fuzzy"
 o.pumheight = 10
 o.pumborder = "rounded"
 o.laststatus = 2
-o.statusline = "%f %m %r %=%l:%c %P"
+
+-- reads .git/HEAD directly (no gitsigns dependency, no shelling out to git)
+function _G.MinimalGitBranch()
+	local git_dir = vim.fs.find(".git", { path = vim.fn.expand("%:p:h"), upward = true, limit = 1 })[1]
+	if not git_dir then
+		return ""
+	end
+	local head = io.open(git_dir .. "/HEAD", "r")
+	if not head then
+		return ""
+	end
+	local content = head:read("*l")
+	head:close()
+	if not content then
+		return ""
+	end
+	local branch = content:match("ref: refs/heads/(.+)$")
+	return " " .. (branch or content:sub(1, 7)) -- detached HEAD -> short hash
+end
+
+o.statusline = "%f %m %r %{v:lua.MinimalGitBranch()} %=%l:%c %P"
 o.winborder = "rounded"
 
 vim.diagnostic.config({
 	virtual_text = {
 		prefix = "●",
-		current_line = false, -- leave full detail on the cursor line to virtual_lines below
-		source = "if_many", -- only label the source when more than one LSP client reports
+		current_line = false,
+		source = "if_many",
 		format = function(diagnostic)
 			local code = diagnostic.code and string.format("[%s]", diagnostic.code) or ""
 			return string.format("%s %s", code, diagnostic.message)
 		end,
 	},
 	virtual_lines = {
-		current_line = true, -- full multi-line message, only where the cursor is
+		current_line = true,
 	},
 	underline = true,
 	update_in_insert = true,
-	severity_sort = true, -- errors draw over warnings/hints when they overlap
+	severity_sort = true,
 	float = { source = true, border = "rounded" },
 	signs = {
 		text = {
@@ -111,7 +132,6 @@ vim.pack.add({
 	{ src = gh("stevearc/conform.nvim") },
 	{ src = gh("nvim-tree/nvim-web-devicons") },
 	{ src = gh("stevearc/oil.nvim") },
-	{ src = gh("folke/which-key.nvim") },
 })
 
 -- Colorscheme
@@ -122,7 +142,7 @@ require("tokyonight").setup({
 vim.cmd.colorscheme("tokyonight")
 
 -- Treesitter
---
+
 local ts = require("nvim-treesitter")
 
 ts.install({
@@ -135,6 +155,7 @@ ts.install({
 	"javascript", -- covers .jsx too
 	"typescript",
 	"tsx",
+	"kotlin",
 })
 
 vim.treesitter.language.register("bash", "zsh")
@@ -150,7 +171,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- LSP
---
+
 local lsp_kind_icons = {
 	"  Text",
 	"  Method",
@@ -192,12 +213,12 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		end
 		local lsp = vim.lsp
 
-		lmap("gd", lsp.buf.definition, "[G]oto [D]efinition")
+		lmap("gd", lsp.buf.definition, "[G]oto [D]definition")
 		lmap("gr", lsp.buf.references, "[G]oto [R]eferences")
 		lmap("gI", lsp.buf.implementation, "[G]oto [I]mplementation")
-		lmap("<leader>D", lsp.buf.type_definition, "Type [D]efinition")
-		lmap("<leader>ds", lsp.buf.document_symbol, "[D]ocument [S]ymbols")
-		lmap("<leader>ws", lsp.buf.workspace_symbol, "[W]orkspace [S]ymbols")
+		lmap("<leader>D", lsp.buf.type_definition, "Type [D]definition")
+		lmap("<leader>ds", lsp.buf.document_symbol, "[D]ocument [S]symbols")
+		lmap("<leader>ws", lsp.buf.workspace_symbol, "[W]orkspace [S]symbols")
 
 		lmap("K", lsp.buf.hover, "Hover Documentation")
 		lmap("<leader>rn", lsp.buf.rename, "[R]e[n]ame")
@@ -296,12 +317,31 @@ vim.lsp.enable({
 	"cssls",
 	"jsonls",
 	"yamlls",
-	"eslint", -- separate from vtsls: type errors vs lint rules, needs an eslint config file in the project
+	"eslint",
+	"kotlin_language_server",
 })
 
 -- mini.pick (fuzzy finder)
 
-require("mini.pick").setup()
+require("mini.pick").setup({
+	options = {
+		content_from_bottom = true, -- list grows bottom-up, like fzf/telescope
+		use_cache = true, -- cache matches across repeated prompts
+	},
+	window = {
+		config = function()
+			local height = math.floor(0.7 * vim.o.lines)
+			local width = math.floor(0.7 * vim.o.columns)
+			return {
+				anchor = "NW",
+				height = height,
+				width = width,
+				row = math.floor((vim.o.lines - height) / 2),
+				col = math.floor((vim.o.columns - width) / 2),
+			}
+		end,
+	},
+})
 
 map("n", "<leader>ff", function()
 	MiniPick.builtin.files()
@@ -319,13 +359,6 @@ end, { desc = "Resume Last Picker" })
 -- mini.pairs (autoclose brackets)
 
 require("mini.pairs").setup()
-
--- which-key (shows available keymaps, reads the `desc` already set on each `map()`)
-
-vim.o.timeout = true
-vim.o.timeoutlen = 500
-
-require("which-key").setup({})
 
 -- diffview (git — the only git plugin in this config)
 
@@ -362,6 +395,7 @@ require("conform").setup({
 		javascriptreact = { "prettier" },
 		lua = { "stylua" },
 		rust = { "rustfmt", lsp_format = "fallback" },
+		kotlin = { "ktlint" },
 		["_"] = { "trim_whitespace" },
 	},
 	default_format_opts = {
