@@ -473,6 +473,11 @@ require("mini.pairs").setup()
 
 require("diffview").setup({
 	enhanced_diff_hl = true,
+	hooks = {
+		diff_buf_win_enter = function()
+			vim.opt_local.wrap = false
+		end,
+	},
 	view = {
 		merge_tool = {
 			layout = "diff3_mixed",
@@ -493,6 +498,8 @@ require("diffview").setup({
 
 map("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Open Git Diff / Conflicts" })
 map("n", "<leader>gc", "<cmd>DiffviewClose<cr>", { desc = "Close Git Diff" })
+map("n", "<leader>gh", "<cmd>DiffviewFileHistory<cr>", { desc = "Git History" })
+map("n", "<leader>gH", "<cmd>DiffviewFileHistory %<cr>", { desc = "Git File History" })
 
 local function eslint_fix_all(bufnr)
 	for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr, name = "eslint" })) do
