@@ -17,16 +17,13 @@ o.number = true
 o.tabstop = 2
 o.shiftwidth = 2
 o.expandtab = true
-o.autoindent = true
 o.mouse = "a"
 o.ignorecase = true
 o.smartcase = true
 o.cursorline = true
-vim.opt.sessionoptions:append("tabpages")
 o.termguicolors = true
 o.background = "dark"
 o.signcolumn = "yes"
-o.backspace = "indent,eol,start"
 vim.opt.clipboard:append("unnamedplus")
 o.splitright = true
 o.splitbelow = true
@@ -63,11 +60,23 @@ vim.diagnostic.config({
 			[vim.diagnostic.severity.HINT] = " ",
 		},
 	},
-	-- Make diagnostic background transparent
-	on_ready = function()
-		vim.cmd("highlight DiagnosticVirtualText guibg=NONE")
-	end,
 })
+
+local function transparent_diagnostics()
+	for _, severity in ipairs({ "Error", "Warn", "Info", "Hint", "Ok" }) do
+		local name = "DiagnosticVirtualText" .. severity
+		local highlight = vim.api.nvim_get_hl(0, { name = name, link = false })
+		highlight.bg = nil
+		highlight.ctermbg = nil
+		vim.api.nvim_set_hl(0, name, highlight)
+	end
+end
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+	group = vim.api.nvim_create_augroup("minimal-diagnostic-colors", { clear = true }),
+	callback = transparent_diagnostics,
+})
+transparent_diagnostics()
 
 local map = vim.keymap.set
 
@@ -80,7 +89,6 @@ map("n", "<C-l>", "<C-w>l", { desc = "Go to Right Window" })
 
 map("n", "<leader>xq", function()
 	vim.diagnostic.setqflist()
-	vim.cmd("copen")
 end, { desc = "Diagnostics to quickfix" })
 
 local function diag_jump_and_open_float(count)
@@ -285,23 +293,7 @@ vim.lsp.config("rust_analyzer", {
 
 vim.lsp.config("vtsls", {
 	settings = {
-		typescriptreact = {
-			inlayHints = {
-				parameterNames = { enabled = "all" },
-				variableTypes = { enabled = true },
-				propertyDeclarationTypes = { enabled = true },
-				functionLikeReturnTypes = { enabled = true },
-			},
-		},
 		typescript = {
-			inlayHints = {
-				parameterNames = { enabled = "all" },
-				variableTypes = { enabled = true },
-				propertyDeclarationTypes = { enabled = true },
-				functionLikeReturnTypes = { enabled = true },
-			},
-		},
-		javascriptreact = {
 			inlayHints = {
 				parameterNames = { enabled = "all" },
 				variableTypes = { enabled = true },
