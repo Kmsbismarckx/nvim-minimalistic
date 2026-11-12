@@ -87,7 +87,7 @@ map("n", "<C-j>", "<C-w>j", { desc = "Go to Lower Window" })
 map("n", "<C-k>", "<C-w>k", { desc = "Go to Upper Window" })
 map("n", "<C-l>", "<C-w>l", { desc = "Go to Right Window" })
 
-map("n", "<leader>xq", function()
+map("n", "<leader>dq", function()
 	vim.diagnostic.setqflist()
 end, { desc = "Diagnostics to quickfix" })
 
@@ -115,7 +115,6 @@ vim.pack.add({
 	{ src = gh("neovim/nvim-lspconfig") },
 	{ src = gh("echasnovski/mini.pairs") },
 	{ src = gh("folke/snacks.nvim") },
-	{ src = gh("folke/trouble.nvim") },
 	{ src = gh("folke/todo-comments.nvim") },
 	{ src = gh("nvim-lua/plenary.nvim") },
 	{ src = gh("folke/noice.nvim") },
@@ -223,18 +222,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		lmap("grt", function()
 			Snacks.picker.lsp_type_definitions()
 		end, "[G]oto Type [D]efinition")
-		lmap("<leader>ds", lsp.buf.document_symbol, "[D]ocument [S]ymbols")
-		lmap("<leader>ws", lsp.buf.workspace_symbol, "[W]orkspace [S]ymbols")
 
 		lmap("K", lsp.buf.hover, "Hover Documentation")
-		lmap("<leader>rn", lsp.buf.rename, "[R]e[n]ame")
+		lmap("<leader>cr", lsp.buf.rename, "Rename Symbol")
 		lmap("<leader>ca", lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
 		lmap("gD", function()
 			Snacks.picker.lsp_declarations()
 		end, "[G]oto [D]eclaration")
-		lmap("<leader>f", function()
-			require("conform").format({ async = true })
-		end, "[F]ormat Buffer")
 
 		local client = lsp.get_client_by_id(event.data.client_id)
 
@@ -386,26 +380,33 @@ end, { desc = "Find Files" })
 map("n", "<leader>fg", function()
 	Snacks.picker.grep()
 end, { desc = "Live Grep" })
-map("n", "<leader>fd", function()
+map("n", "<leader>bb", function()
 	Snacks.picker.buffers()
 end, { desc = "Buffers" })
-map("n", "<leader><space>", function()
+map("n", "<leader>fr", function()
 	Snacks.picker.resume()
 end, { desc = "Resume Last Picker" })
-map("n", "<leader>fs", function()
+map("n", "<leader>sd", function()
 	Snacks.picker.lsp_symbols()
 end, { desc = "Document Symbols" })
+map("n", "<leader>sw", function()
+	Snacks.picker.lsp_workspace_symbols()
+end, { desc = "Workspace Symbols" })
 map("n", "<leader>bd", function()
 	Snacks.bufdelete()
 end, { desc = "Delete Buffer" })
 
 require("todo-comments").setup({})
 
-require("trouble").setup({})
-
-map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", { desc = "Diagnostics (Trouble)" })
-map("n", "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", { desc = "Buffer Diagnostics (Trouble)" })
-map("n", "<leader>xt", "<cmd>Trouble todo toggle<cr>", { desc = "Todo Comments (Trouble)" })
+map("n", "<leader>dd", function()
+	Snacks.picker.diagnostics()
+end, { desc = "Project Diagnostics" })
+map("n", "<leader>db", function()
+	Snacks.picker.diagnostics_buffer()
+end, { desc = "Buffer Diagnostics" })
+map("n", "<leader>ft", function()
+	Snacks.picker.todo_comments()
+end, { desc = "Find TODO Comments" })
 
 require("noice").setup({
 	presets = {
@@ -425,7 +426,14 @@ vim.o.timeoutlen = 500
 
 require("which-key").setup({})
 require("which-key").add({
-	{ "<leader>x", group = "Trouble" },
+	{ "<leader>f", group = "Files" },
+	{ "<leader>b", group = "Buffers" },
+	{ "<leader>g", group = "Git" },
+	{ "<leader>d", group = "Diagnostics" },
+	{ "<leader>c", group = "Code" },
+	{ "<leader>s", group = "Symbols" },
+	{ "<leader>t", group = "Toggles" },
+	{ "<leader>h", group = "Hunks" },
 })
 
 require("mini.pairs").setup()
@@ -473,6 +481,10 @@ require("conform").setup({
 	},
 	notify_on_error = true,
 })
+
+map("n", "<leader>cf", function()
+	require("conform").format({ async = true })
+end, { desc = "Format Buffer" })
 
 require("oil").setup({
 	default_file_explorer = true,

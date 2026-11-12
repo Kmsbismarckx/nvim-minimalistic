@@ -23,3 +23,19 @@ NVIM_APPNAME=nvim-minimalistic NVIM_LSP=react nvim
 `none`: disable LSP. Unset or `all`: enable all configured servers.
 Unknown profiles show a warning and disable LSP. Formatters and Treesitter
 are independent of the selected profile.
+
+**Keymaps:** `<leader>` is Space; first letter selects a group, second an action.
+
+| Group | Keys |
+| --- | --- |
+| Files | `ff` find, `fg` grep, `fr` resume picker, `ft` TODOs |
+| Buffers | `bb` list, `bd` delete |
+| Git | `gd` open diff, `gc` close diff |
+| Diagnostics | `dd` project, `db` buffer, `dq` quickfix |
+| Code | `ca` action, `cr` rename, `cf` format |
+| Symbols | `sd` document, `sw` workspace |
+| Toggles | `th` inlay hints |
+| Hunks | `hp` preview, `hs` stage, `hr` reset, `hb` blame |
+
+Navigation stays on `gd`, `grr`, `gri`, `grt`, `gD`, `K`, `[d` / `]d`,
+`[h` / `]h`, and `-` (parent directory). Press Space to see groups in Which-key.
