@@ -339,17 +339,24 @@ vim.lsp.config("lua_ls", {
 	},
 })
 
-vim.lsp.enable({
-	"vtsls",
-	"rust_analyzer",
-	"lua_ls",
-	"html",
-	"cssls",
-	"jsonls",
-	"yamlls",
-	"eslint",
-	"kotlin_language_server",
-})
+local lsp_profiles = {
+	all = { "vtsls", "rust_analyzer", "lua_ls", "html", "cssls", "jsonls", "yamlls", "eslint" },
+	rust = { "rust_analyzer" },
+	react = { "vtsls", "eslint", "html", "cssls", "jsonls" },
+	none = {},
+}
+local lsp_profile = vim.env.NVIM_LSP
+if not lsp_profile or lsp_profile == "" then
+	lsp_profile = "all"
+end
+local servers = lsp_profiles[lsp_profile]
+if servers then
+	if #servers > 0 then
+		vim.lsp.enable(servers)
+	end
+else
+	vim.notify("Unknown NVIM_LSP profile: " .. lsp_profile .. ". Use all, rust, react or none. LSP disabled.", vim.log.levels.WARN)
+end
 
 require("snacks").setup({
 	picker = {
