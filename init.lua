@@ -384,7 +384,7 @@ require("snacks").setup({
 	input = { enabled = true },
 	notifier = { enabled = true },
 	indent = { enabled = true },
-	scroll = { enabled = true },
+	scroll = { enabled = false },
 	statuscolumn = { enabled = true },
 })
 
