@@ -135,6 +135,36 @@ require("tokyonight").setup({
 vim.cmd.colorscheme("tokyonight")
 
 require("blink.cmp").setup({
+	cmdline = {
+		enabled = true,
+		keymap = {
+			preset = "none",
+			["<Up>"] = {
+				function(cmp)
+					if cmp.is_menu_visible() then
+						return cmp.select_prev()
+					end
+				end,
+				"fallback",
+			},
+			["<Down>"] = {
+				function(cmp)
+					if cmp.is_menu_visible() then
+						return cmp.select_next()
+					end
+				end,
+				"fallback",
+			},
+			["<Tab>"] = { "show", "select_next", "fallback" },
+			["<S-Tab>"] = { "select_prev", "fallback" },
+			["<C-y>"] = { "accept", "fallback" },
+			["<C-e>"] = { "hide", "fallback" },
+		},
+		completion = {
+			list = { selection = { preselect = false, auto_insert = true } },
+			menu = { auto_show = function() return vim.fn.getcmdtype() == ":" end },
+		},
+	},
 	keymap = {
 		preset = "none",
 
