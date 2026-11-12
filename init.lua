@@ -34,21 +34,8 @@ o.completeopt = "menuone,noselect"
 o.laststatus = 2
 
 function _G.MinimalGitBranch()
-	local git_dir = vim.fs.find(".git", { path = vim.fn.expand("%:p:h"), upward = true, limit = 1 })[1]
-	if not git_dir then
-		return ""
-	end
-	local head = io.open(git_dir .. "/HEAD", "r")
-	if not head then
-		return ""
-	end
-	local content = head:read("*l")
-	head:close()
-	if not content then
-		return ""
-	end
-	local branch = content:match("ref: refs/heads/(.+)$")
-	return " " .. (branch or content:sub(1, 7)) -- detached HEAD -> short hash
+	local branch = vim.b.gitsigns_head
+	return branch and branch ~= "" and (" " .. branch) or ""
 end
 
 o.statusline = "%f %m %r %{v:lua.MinimalGitBranch()} %=%l:%c %P"
@@ -126,7 +113,7 @@ vim.pack.add({
 	{ src = gh("folke/noice.nvim") },
 	{ src = gh("folke/which-key.nvim") },
 	{ src = gh("MunifTanjim/nui.nvim") },
-	{ src = gh("saghen/blink.cmp"),                version = vim.version.range("1") },
+	{ src = gh("saghen/blink.cmp"), version = vim.version.range("1") },
 	{ src = gh("rafamadriz/friendly-snippets") },
 	{ src = gh("sindrets/diffview.nvim") },
 	{ src = gh("stevearc/conform.nvim") },
@@ -148,8 +135,8 @@ require("blink.cmp").setup({
 		["<Down>"] = { "select_next", "fallback" },
 		["<C-x><C-o>"] = { "show", "show_documentation", "hide_documentation" },
 		["<CR>"] = { "accept", "fallback" },
-		["<Tab>"] = { "select_next", "fallback" },
-		["<S-Tab>"] = { "select_prev", "fallback" },
+		["<Tab>"] = { "snippet_forward", "select_next", "fallback" },
+		["<S-Tab>"] = { "snippet_backward", "select_prev", "fallback" },
 		["<C-b>"] = { "scroll_documentation_up", "fallback" },
 		["<C-f>"] = { "scroll_documentation_down", "fallback" },
 		["<C-e>"] = { "hide", "fallback" },
@@ -162,8 +149,8 @@ require("blink.cmp").setup({
 			border = "rounded",
 			draw = {
 				columns = {
-					{ "label",      "label_description", gap = 1 },
-					{ "kind_icon",  "kind",              gap = 1 },
+					{ "label", "label_description", gap = 1 },
+					{ "kind_icon", "kind", gap = 1 },
 					{ "source_name" },
 				},
 			},
@@ -238,13 +225,13 @@ vim.api.nvim_create_autocmd("LspAttach", {
 			Snacks.picker.lsp_declarations()
 		end, "[G]oto [D]eclaration")
 		lmap("<leader>f", function()
-			lsp.buf.format({ async = true })
+			require("conform").format({ async = true })
 		end, "[F]ormat Buffer")
 
 		local client = lsp.get_client_by_id(event.data.client_id)
 
 		if client and client:supports_method(lsp.protocol.Methods.textDocument_documentHighlight) then
-			local group = vim.api.nvim_create_augroup("lsp-highlight", { clear = false })
+			local group = vim.api.nvim_create_augroup("minimal-lsp-highlight-" .. event.buf, { clear = true })
 			vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 				buffer = event.buf,
 				group = group,
@@ -255,11 +242,29 @@ vim.api.nvim_create_autocmd("LspAttach", {
 				group = group,
 				callback = lsp.buf.clear_references,
 			})
+			vim.api.nvim_create_autocmd("LspDetach", {
+				buffer = event.buf,
+				group = group,
+				callback = function()
+					vim.schedule(function()
+						if not vim.api.nvim_buf_is_valid(event.buf) then
+							return
+						end
+						for _, attached in ipairs(lsp.get_clients({ bufnr = event.buf })) do
+							if attached:supports_method(lsp.protocol.Methods.textDocument_documentHighlight) then
+								return
+							end
+						end
+						vim.api.nvim_clear_autocmds({ group = group, buffer = event.buf })
+						vim.api.nvim_buf_call(event.buf, lsp.buf.clear_references)
+					end)
+				end,
+			})
 		end
 
 		if client and client:supports_method(lsp.protocol.Methods.textDocument_inlayHint) then
 			lmap("<leader>th", function()
-				lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf }))
+				lsp.inlay_hint.enable(not lsp.inlay_hint.is_enabled({ bufnr = event.buf }), { bufnr = event.buf })
 			end, "[T]oggle Inlay [H]ints")
 		end
 	end,
@@ -465,7 +470,7 @@ require("conform").setup({
 	},
 	format_on_save = {
 		lsp_format = "fallback",
-		timeout_ms = 500,
+		timeout_ms = 3000,
 	},
 	notify_on_error = true,
 })
@@ -495,9 +500,21 @@ map("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 vim.api.nvim_create_autocmd("User", {
 	pattern = "OilActionsPost",
 	callback = function(event)
-		local action = event.data.actions[1]
-		if action and action.type == "move" then
-			Snacks.rename.on_rename_file(action.src_url, action.dest_url)
+		if event.data.err then
+			return
+		end
+		local oil_util = require("oil.util")
+		for _, action in ipairs(event.data.actions) do
+			if action.type == "move" then
+				local src_scheme, src_path = oil_util.parse_url(action.src_url)
+				local dest_scheme, dest_path = oil_util.parse_url(action.dest_url)
+				if src_scheme == "oil://" and dest_scheme == "oil://" then
+					Snacks.rename.on_rename_file(
+						require("oil.fs").posix_to_os_path(src_path),
+						require("oil.fs").posix_to_os_path(dest_path)
+					)
+				end
+			end
 		end
 	end,
 })
