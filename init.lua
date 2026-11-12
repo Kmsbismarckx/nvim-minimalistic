@@ -185,7 +185,6 @@ ts.install({
 	"javascript",
 	"typescript",
 	"tsx",
-	"kotlin",
 	"regex",
 })
 
@@ -491,7 +490,6 @@ require("conform").setup({
 		javascriptreact = { "prettier" },
 		lua = { "stylua" },
 		rust = { "rustfmt", lsp_format = "fallback" },
-		kotlin = { "ktlint" },
 		["_"] = { "trim_whitespace" },
 	},
 	default_format_opts = {

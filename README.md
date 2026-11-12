@@ -9,7 +9,7 @@ Minimal Neovim 0.12 config, single `init.lua`, managed via `vim.pack`.
   terminal font — used for file icons and completion kind icons.
 - LSP servers and formatters are **not** auto-installed (no mason) —
   install them yourself, e.g.:
-  `brew install lua-language-server rust-analyzer stylua ktlint`
+  `brew install lua-language-server rust-analyzer stylua`
   `npm i -g @vtsls/language-server vscode-langservers-extracted yaml-language-server prettier`
 
 **LSP profiles (per session):**
