@@ -125,6 +125,7 @@ vim.pack.add({
 	{ src = gh("sindrets/diffview.nvim") },
 	{ src = gh("stevearc/conform.nvim") },
 	{ src = gh("nvim-tree/nvim-web-devicons") },
+	{ src = gh("MeanderingProgrammer/render-markdown.nvim") },
 	{ src = gh("stevearc/oil.nvim") },
 	{ src = gh("lewis6991/gitsigns.nvim") },
 })
@@ -133,6 +134,10 @@ require("tokyonight").setup({
 	style = "night",
 })
 vim.cmd.colorscheme("tokyonight")
+
+require("render-markdown").setup({})
+
+map("n", "<leader>tm", "<cmd>RenderMarkdown toggle<cr>", { desc = "Toggle Markdown Rendering" })
 
 require("blink.cmp").setup({
 	cmdline = {

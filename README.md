@@ -40,11 +40,15 @@ sets; `none` or an unknown profile adds neither. Existing parsers are retained.
 | Diagnostics | `dd` project, `db` buffer, `dq` quickfix |
 | Code | `ca` action, `cr` rename, `cf` format |
 | Symbols | `sd` document, `sw` workspace |
-| Toggles | `th` inlay hints |
+| Toggles | `th` inlay hints, `tm` Markdown rendering |
 | Hunks | `hp` preview, `hs` stage, `hr` reset, `hb` blame |
 
 Navigation stays on `gd`, `grr`, `gri`, `grt`, `gD`, `K`, `[d` / `]d`,
 `[h` / `]h`, and `-` (parent directory). Press Space to see groups in Which-key.
+
+Markdown files render directly in Neovim via `render-markdown.nvim`.
+Use `<leader>tm` or `:RenderMarkdown toggle` to toggle rendering.
+Usage and health checks: [docs/markdown.md](docs/markdown.md).
 
 JS/TS saving and `<leader>cf` run ESLint fix-all through the attached ESLint LSP,
 then Prettier. `eslint_d` is not needed. The project needs ESLint and its config;
