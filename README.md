@@ -39,3 +39,7 @@ are independent of the selected profile.
 
 Navigation stays on `gd`, `grr`, `gri`, `grt`, `gD`, `K`, `[d` / `]d`,
 `[h` / `]h`, and `-` (parent directory). Press Space to see groups in Which-key.
+
+JS/TS saving and `<leader>cf` run ESLint fix-all through the attached ESLint LSP,
+then Prettier. `eslint_d` is not needed. The project needs ESLint and its config;
+use the `react` or `all` LSP profile. Only auto-fixable issues are corrected.

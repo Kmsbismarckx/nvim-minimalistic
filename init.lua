@@ -285,6 +285,13 @@ vim.lsp.config("rust_analyzer", {
 	},
 })
 
+vim.lsp.config("eslint", {
+	settings = {
+		codeActionOnSave = { enable = true, mode = "all" },
+		format = false,
+	},
+})
+
 vim.lsp.config("vtsls", {
 	settings = {
 		typescript = {
@@ -461,12 +468,27 @@ require("diffview").setup({
 map("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Open Git Diff / Conflicts" })
 map("n", "<leader>gc", "<cmd>DiffviewClose<cr>", { desc = "Close Git Diff" })
 
+local function eslint_fix_all(bufnr)
+	for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr, name = "eslint" })) do
+		local response, err = client:request_sync("workspace/executeCommand", {
+			command = "eslint.applyAllFixes",
+			arguments = { {
+				uri = vim.uri_from_bufnr(bufnr),
+				version = vim.lsp.util.buf_versions[bufnr],
+			} },
+		}, 3000, bufnr)
+		if not response or response.err then
+			vim.notify("ESLint fix-all failed: " .. vim.inspect(err or (response and response.err)), vim.log.levels.WARN)
+		end
+	end
+end
+
 require("conform").setup({
 	formatters_by_ft = {
-		typescript = { "eslint_d", "prettier" },
-		typescriptreact = { "eslint_d", "prettier" },
-		javascript = { "eslint_d", "prettier" },
-		javascriptreact = { "eslint_d", "prettier" },
+		typescript = { "prettier" },
+		typescriptreact = { "prettier" },
+		javascript = { "prettier" },
+		javascriptreact = { "prettier" },
 		lua = { "stylua" },
 		rust = { "rustfmt", lsp_format = "fallback" },
 		kotlin = { "ktlint" },
@@ -475,14 +497,15 @@ require("conform").setup({
 	default_format_opts = {
 		lsp_format = "fallback",
 	},
-	format_on_save = {
-		lsp_format = "fallback",
-		timeout_ms = 3000,
-	},
+	format_on_save = function(bufnr)
+		eslint_fix_all(bufnr)
+		return { lsp_format = "fallback", timeout_ms = 3000 }
+	end,
 	notify_on_error = true,
 })
 
 map("n", "<leader>cf", function()
+	eslint_fix_all(vim.api.nvim_get_current_buf())
 	require("conform").format({ async = true })
 end, { desc = "Format Buffer" })
 
