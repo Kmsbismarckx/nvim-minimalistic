@@ -21,8 +21,12 @@ NVIM_APPNAME=nvim-minimalistic NVIM_LSP=react nvim
 
 `rust`: rust-analyzer. `react`: vtsls, ESLint, HTML, CSS and JSON.
 `none`: disable LSP. Unset or `all`: enable all configured servers.
-Unknown profiles show a warning and disable LSP. Formatters and Treesitter
-are independent of the selected profile.
+Unknown profiles show a warning and disable LSP. Formatters are independent
+of the selected profile.
+
+Treesitter always installs Lua, Vim, Vimdoc, Markdown and Bash parsers.
+`rust` adds Rust; `react` adds JS, TS, TSX and regex; `all` (default) adds both
+sets; `none` or an unknown profile adds neither. Existing parsers are retained.
 
 **Keymaps:** `<leader>` is Space; first letter selects a group, second an action.
 

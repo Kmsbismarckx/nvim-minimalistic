@@ -173,20 +173,21 @@ require("blink.cmp").setup({
 	fuzzy = { implementation = "prefer_rust_with_warning" },
 })
 
-local ts = require("nvim-treesitter")
+local lsp_profile = vim.env.NVIM_LSP
+if not lsp_profile or lsp_profile == "" then
+	lsp_profile = "all"
+end
 
-ts.install({
-	"lua",
-	"vim",
-	"vimdoc",
-	"markdown",
-	"markdown_inline",
-	"bash",
-	"javascript",
-	"typescript",
-	"tsx",
-	"regex",
-})
+local ts = require("nvim-treesitter")
+local parsers = { "lua", "vim", "vimdoc", "markdown", "markdown_inline", "bash" }
+local parser_profiles = {
+	all = { "rust", "javascript", "typescript", "tsx", "regex" },
+	rust = { "rust" },
+	react = { "javascript", "typescript", "tsx", "regex" },
+	none = {},
+}
+vim.list_extend(parsers, parser_profiles[lsp_profile] or {})
+ts.install(parsers)
 
 vim.treesitter.language.register("bash", "zsh")
 
@@ -337,10 +338,6 @@ local lsp_profiles = {
 	react = { "vtsls", "eslint", "html", "cssls", "jsonls" },
 	none = {},
 }
-local lsp_profile = vim.env.NVIM_LSP
-if not lsp_profile or lsp_profile == "" then
-	lsp_profile = "all"
-end
 local servers = lsp_profiles[lsp_profile]
 if servers then
 	if #servers > 0 then
