@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/release [patch|minor|major|vX.Y.Z] [--dry-run] [--push]
+
+Create an annotated release tag on the current master commit.
+Default: patch (v0.1.0 for the first release).
+  --dry-run  Show the release without changing Git.
+  --push     Push master and the new tag atomically to origin.
+
+Commit your changes and check Neovim before running this command.
+EOF
+}
+
+die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
+
+version_arg=patch
+version_set=false
+dry_run=false
+push=false
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage; exit 0 ;;
+    --dry-run) dry_run=true ;;
+    --push) push=true ;;
+    patch|minor|major|v[0-9]*)
+      "$version_set" && die 'Specify only one version or bump.'
+      version_arg=$arg
+      version_set=true
+      ;;
+    *) die "Unknown argument: $arg" ;;
+  esac
+done
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+cd "$script_dir/.."
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die 'Not a Git repository.'
+branch=$(git symbolic-ref --quiet --short HEAD) || die 'Detached HEAD; switch to master.'
+[[ "$branch" == master ]] || die 'Releases must be created from master.'
+[[ -z "$(git status --porcelain)" ]] || die 'Working tree is dirty. Commit or stash changes first.'
+
+# Only stable vX.Y.Z tags participate in version selection.
+latest=$(git tag --list --sort=-version:refname | awk '/^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/ { print; exit }')
+if [[ "$version_arg" == v* ]]; then
+  [[ "$version_arg" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || die 'Expected a version like v0.1.0.'
+  version=$version_arg
+elif [[ -z "$latest" ]]; then
+  version=v0.1.0
+else
+  IFS=. read -r major minor patch <<< "${latest#v}"
+  case "$version_arg" in
+    major) major=$((major + 1)); minor=0; patch=0 ;;
+    minor) minor=$((minor + 1)); patch=0 ;;
+    patch) patch=$((patch + 1)) ;;
+  esac
+  version="v$major.$minor.$patch"
+fi
+
+if [[ -n "$latest" ]]; then
+  highest=$(printf '%s\n%s\n' "$latest" "$version" | sort -t. -k1.2,1n -k2,2n -k3,3n | tail -n 1)
+  [[ "$version" != "$latest" && "$highest" == "$version" ]] || die "Version must be greater than $latest."
+  git merge-base --is-ancestor "$latest" HEAD || die "$latest is not an ancestor of HEAD."
+  [[ "$(git rev-parse "$latest^{commit}")" != "$(git rev-parse HEAD)" ]] || die 'No new commits since the last release.'
+fi
+git show-ref --verify --quiet "refs/tags/$version" && die "Tag $version already exists."
+
+if "$push"; then
+  git fetch origin master --tags
+  [[ "$(git rev-parse HEAD)" == "$(git rev-parse FETCH_HEAD)" ]] ||
+    git merge-base --is-ancestor FETCH_HEAD HEAD || die 'Local master is behind or diverged from origin/master.'
+  git show-ref --verify --quiet "refs/tags/$version" && die "Tag $version already exists on origin."
+fi
+
+printf 'Release: %s\nCommit:  %s\n' "$version" "$(git rev-parse --short HEAD)"
+if "$dry_run"; then
+  printf 'Dry run: no tag created or pushed.\n'
+  exit 0
+fi
+git tag -a "$version" -m "Release $version"
+if "$push"; then
+  git push --atomic origin refs/heads/master "refs/tags/$version"
+else
+  printf 'Local tag created. To publish:\n  git push --atomic origin master %s\n' "$version"
+fi

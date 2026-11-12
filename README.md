@@ -2,6 +2,8 @@
 
 Minimal Neovim 0.12 config, single `init.lua`, managed via `vim.pack`.
 
+Versioning and releases: [docs/versioning.md](docs/versioning.md).
+
     NVIM_APPNAME=nvim-minimal nvim
 
 **Requirements:**
